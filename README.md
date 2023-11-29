@@ -8,6 +8,11 @@ DBeaver数据库密码解密工具
 
 ## 使用说明
 
+```
+SharpDBeaver.exe
+SharpDBeaver.exe -c credentials-config.json -s data-sources.json
+```
+
 ![](./img/test.png)
 
 ## 免责声明

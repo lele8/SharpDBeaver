@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -12,24 +13,51 @@ namespace SharpDBeaver
         {
             try
             {
-                ConnectionInfo(Decrypt(GetAppDataFolderPath() + "\\DBeaverData\\workspace6\\General\\.dbeaver\\credentials-config.json", "babb4a9f774ab853c96c2d653dfe544a", "00000000000000000000000000000000"));
+                string config = "";
+                string sources = "";
+                foreach (var entry in args.Select((value, index) => new { index, value }))
+                {
+                    string argument = entry.value.ToUpper();
+
+                    switch (argument)
+                    {
+                        case "-C":
+                        case "/C":
+                            config = args[entry.index + 1];
+                            break;
+                        case "-S":
+                        case "/S":
+                            sources = args[entry.index + 1];
+                            break;
+                    }
+                }
+                if (args == null || !args.Any())
+                {
+                    sources = GetAppDataFolderPath() + "\\DBeaverData\\workspace6\\General\\.dbeaver\\data-sources.json";
+                    ConnectionInfo(Decrypt(GetAppDataFolderPath() + "\\DBeaverData\\workspace6\\General\\.dbeaver\\credentials-config.json", "babb4a9f774ab853c96c2d653dfe544a", "00000000000000000000000000000000"), sources);
+                }
+                else if (!string.IsNullOrEmpty(sources) && !string.IsNullOrEmpty(config))
+                {
+                    ConnectionInfo(Decrypt(config, "babb4a9f774ab853c96c2d653dfe544a", "00000000000000000000000000000000"), sources);
+                }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
+
         }
 
-        public static void ConnectionInfo(string json)
+        public static void ConnectionInfo(string config, string sources)
         {
             string pattern = @"\""(?<key>[^""]+)\""\s*:\s*\{\s*\""#connection\""\s*:\s*\{\s*\""user\""\s*:\s*\""(?<user>[^""]+)\""\s*,\s*\""password\""\s*:\s*\""(?<password>[^""]+)\""\s*\}\s*\}";
-            MatchCollection matches = Regex.Matches(json, pattern);
+            MatchCollection matches = Regex.Matches(config, pattern);
             foreach (Match match in matches)
             {
                 string key = match.Groups["key"].Value;
                 string user = match.Groups["user"].Value;
                 string password = match.Groups["password"].Value;
-                MatchDataSource(File.ReadAllText(GetAppDataFolderPath() + "\\DBeaverData\\workspace6\\General\\.dbeaver\\data-sources.json"), key);
+                MatchDataSource(File.ReadAllText(sources), key);
                 Console.WriteLine($"username: {user}");
                 Console.WriteLine($"password: {password}");
                 Console.WriteLine();
